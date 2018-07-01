@@ -60,7 +60,8 @@
 /* #define GFC_CAF_CHECK  1 */
 
 /* Debug array referencing  */
-static char* caf_array_ref_str[] = {
+static char* caf_array_ref_str[] =
+{
   "CAF_ARR_REF_NONE",
   "CAF_ARR_REF_VECTOR",
   "CAF_ARR_REF_FULL",
@@ -70,10 +71,11 @@ static char* caf_array_ref_str[] = {
   "CAF_ARR_REF_OPEN_START"
 };
 
-static char* caf_ref_type_str[] = {
+static char* caf_ref_type_str[] =
+{
   "CAF_REF_COMPONENT",
   "CAF_REF_ARRAY",
-  "CAF_REF_STATIC_ARRAY",
+  "CAF_REF_STATIC_ARRAY"
 };
 
 #ifndef EXTRA_DEBUG_OUTPUT
@@ -204,7 +206,8 @@ static const int MPI_TAG_CAF_SYNC_IMAGES = 424242;
 
 /* Pending puts */
 #if defined(NONBLOCKING_PUT) && !defined(CAF_MPI_LOCK_UNLOCK)
-typedef struct win_sync {
+typedef struct win_sync
+{
   MPI_Win *win;
   int img;
   struct win_sync *next;
@@ -662,8 +665,7 @@ void mutex_lock(MPI_Win win, int image_index, int index, int *stat,
   int flag, check_failure = 100, zero = 0;
 #endif
 
-  if (stat != NULL)
-    *stat = 0;
+  if (stat != NULL) *stat = 0;
 
 #ifdef WITH_FAILED_IMAGES
   ierr = MPI_Test(&alive_request, &flag, MPI_STATUS_IGNORE); chk_err(ierr);
@@ -676,10 +678,7 @@ void mutex_lock(MPI_Win win, int image_index, int index, int *stat,
 
   if (acquired_lock != NULL)
   {
-    if (value == 0)
-      *acquired_lock = 1;
-    else
-      *acquired_lock = 0;
+    *acquired_lock = (value == 0) ? 1:0;
     return;
   }
 
@@ -713,9 +712,13 @@ void mutex_lock(MPI_Win win, int image_index, int index, int *stat,
   }
 
   if (stat)
+  {
     *stat = ierr;
+  }
   else if (ierr == STAT_FAILED_IMAGE)
+  {
     terminate_internal(ierr, 0);
+  }
 
   return;
 
@@ -727,9 +730,13 @@ stat_error:
   }
 
   if (stat != NULL)
+  {
     *stat = 99;
+  }
   else
+  {
     terminate_internal(99, 1);
+  }
 #else // MPI_VERSION
 #warning Locking for MPI-2 is not implemented
   printf("Locking for MPI-2 is not supported, "
@@ -741,8 +748,7 @@ void mutex_unlock(MPI_Win win, int image_index, int index, int *stat,
                   char* errmsg, size_t errmsg_len)
 {
   const char msg[] = "Variable is not locked";
-  if (stat != NULL)
-    *stat = 0;
+  if (stat != NULL) *stat = 0;
 #if MPI_VERSION >= 3
   int value = 1, ierr = 0, newval = 0, flag;
 #ifdef WITH_FAILED_IMAGES
@@ -759,9 +765,13 @@ void mutex_unlock(MPI_Win win, int image_index, int index, int *stat,
    *   goto stat_error; */
 
   if (stat)
+  {
     *stat = ierr;
+  }
   else if (ierr == STAT_FAILED_IMAGE)
+  {
     terminate_internal(ierr, 0);
+  }
 
   return;
 
@@ -772,9 +782,13 @@ stat_error:
     memcpy(errmsg, msg, MIN(errmsg_len,strlen(msg)));
   }
   if (stat != NULL)
+  {
     *stat = 99;
+  }
   else
+  {
     terminate_internal(99, 1);
+  }
 #else // MPI_VERSION
 #warning Locking for MPI-2 is not implemented
   printf("Locking for MPI-2 is not supported, "
@@ -816,7 +830,9 @@ PREFIX(init) (int *argc, char ***argv)
       caf_runtime_error("MPI_THREAD_MULTIPLE is not supported: %d", prov_lev);
 #else
     if (is_init)
+    {
       caf_owns_mpi = false;
+    }
     else
     {
       ierr = MPI_Init_thread(argc, argv, prior_thread_level, &prov_lev);
@@ -984,10 +1000,12 @@ finalize_internal(int status_code)
     ierr = MPI_Barrier(CAF_COMM_WORLD); chk_err(ierr);
   }
   else
+  {
     /* Without failed images support, but a given status_code, we need to
      * return to the caller, or we will hang in the following instead of
      * terminating the program. */
     return;
+  }
 #endif
 
 #ifdef GCC_GE_7
@@ -1023,8 +1041,7 @@ finalize_internal(int status_code)
   {
     prev = cur_tok->prev;
     p = TOKEN(cur_tok->token);
-    if (p != NULL)
-      CAF_Win_unlock_all(*p);
+    if (p != NULL) CAF_Win_unlock_all(*p);
 #ifdef GCC_GE_7
     /* Unregister the window to the descriptors when freeing the token. */
     dprint("MPI_Win_free(p);\n");
@@ -1126,12 +1143,10 @@ PREFIX(register) (size_t size, caf_register_t type, caf_token_t *token,
   size_t actual_size;
   int l_var = 0, *init_array = NULL, ierr;
 
-  if (unlikely(caf_is_finalized))
-    goto error;
+  if (unlikely(caf_is_finalized)) goto error;
 
   /* Start GASNET if not already started. */
-  if (caf_num_images == 0)
-    PREFIX(init) (NULL, NULL);
+  if (caf_num_images == 0)  PREFIX(init) (NULL, NULL);
 
   if (type == CAF_REGTYPE_LOCK_STATIC || type == CAF_REGTYPE_LOCK_ALLOC ||
       type == CAF_REGTYPE_CRITICAL || type == CAF_REGTYPE_EVENT_STATIC ||
@@ -1228,7 +1243,9 @@ PREFIX(register) (size_t size, caf_register_t type, caf_token_t *token,
 #ifndef GCC_GE_8
         if (GFC_DESCRIPTOR_RANK(desc) != 0)
 #endif
+        {
           mpi_token->desc = desc;
+        }
 
         if (l_var)
         {
@@ -1246,8 +1263,7 @@ PREFIX(register) (size_t size, caf_register_t type, caf_token_t *token,
         tmp->token = *token;
         caf_allocated_tokens = tmp;
 
-        if (stat)
-          *stat = 0;
+        if (stat) *stat = 0;
 
         /* The descriptor will be initialized only after the call to
          * register. */
@@ -1266,8 +1282,7 @@ error:
   {
     char msg[80];
     strcpy(msg, "Failed to allocate coarray");
-    if (caf_is_finalized)
-      strcat(msg, " - there are stopped images");
+    if (caf_is_finalized) strcat(msg, " - there are stopped images");
 
     if (stat)
     {
@@ -1294,8 +1309,7 @@ PREFIX(register) (size_t size, caf_register_t type, caf_token_t *token,
   size_t actual_size;
   int l_var = 0, *init_array = NULL, ierr;
 
-  if (unlikely(caf_is_finalized))
-    goto error;
+  if (unlikely(caf_is_finalized)) goto error;
 
   /* Start GASNET if not already started. */
   if (caf_num_images == 0)
@@ -1347,16 +1361,14 @@ PREFIX(register) (size_t size, caf_register_t type, caf_token_t *token,
   tmp->token = *token;
   caf_allocated_tokens = tmp;
 
-  if (stat)
-    *stat = 0;
+  if (stat) *stat = 0;
   return mem;
 
 error:
   {
     char msg[80];
     strcpy(msg, "Failed to allocate coarray");
-    if (caf_is_finalized)
-      strcat(msg, " - there are stopped images");
+    if (caf_is_finalized) strcat(msg, " - there are stopped images");
 
     if (stat)
     {
@@ -1366,8 +1378,7 @@ error:
         size_t len = (strlen(msg) > (size_t) errmsg_len) ?
                      (size_t) errmsg_len : strlen (msg);
         memcpy(errmsg, msg, len);
-        if (errmsg_len > len)
-          memset(&errmsg[len], ' ', errmsg_len - len);
+        if (errmsg_len > len) memset(&errmsg[len], ' ', errmsg_len - len);
       }
     }
     else
@@ -1404,16 +1415,14 @@ PREFIX(deregister) (caf_token_t *token, int *stat, char *errmsg,
         size_t len = (sizeof(msg) - 1 > (size_t) errmsg_len) ?
           (size_t) errmsg_len : sizeof (msg) - 1;
         memcpy(errmsg, msg, len);
-        if (errmsg_len > len)
-          memset(&errmsg[len], ' ', errmsg_len - len);
+        if (errmsg_len > len) memset(&errmsg[len], ' ', errmsg_len - len);
       }
       return;
     }
     caf_runtime_error(msg);
   }
 
-  if (stat)
-    *stat = 0;
+  if (stat) *stat = 0;
 
 #ifdef GCC_GE_7
   if (type != CAF_DEREGTYPE_COARRAY_DEALLOCATE_ONLY)
@@ -1450,8 +1459,7 @@ PREFIX(deregister) (caf_token_t *token, int *stat, char *errmsg,
 
         next->prev = prev ? prev->prev:  NULL;
 
-        if (cur == caf_allocated_tokens)
-          caf_allocated_tokens = prev;
+        if (cur == caf_allocated_tokens) caf_allocated_tokens = prev;
 
         free(cur);
         free(*token);
@@ -1552,13 +1560,16 @@ PREFIX(sync_all) (int *stat, char *errmsg, charlen_t errmsg_len)
 #endif
     dprint("MPI_Barrier = %d.\n", err);
     if (ierr == STAT_FAILED_IMAGE)
+    {
       err = STAT_FAILED_IMAGE;
+    }
     else if (ierr != 0)
+    {
       MPI_Error_class(ierr, &err);
+    }
   }
 
-  if (stat != NULL)
-    *stat = err;
+  if (stat != NULL) *stat = err;
 #ifdef WITH_FAILED_IMAGES
   else if (err == STAT_FAILED_IMAGE)
     /* F2015 requests stat to be set for FAILED IMAGES, else error out. */
@@ -1577,8 +1588,7 @@ PREFIX(sync_all) (int *stat, char *errmsg, charlen_t errmsg_len)
       size_t len = (strlen(msg) > (size_t) errmsg_len) ?
                    (size_t) errmsg_len : strlen (msg);
       memcpy(errmsg, msg, len);
-      if (errmsg_len > len)
-        memset(&errmsg[len], ' ', errmsg_len - len);
+      if (errmsg_len > len) memset(&errmsg[len], ' ', errmsg_len - len);
     }
     else if (stat == NULL)
       caf_runtime_error(msg);
@@ -1617,8 +1627,7 @@ assign_char1_from_char4(size_t dst_size, size_t src_size, unsigned char *dst,
   {
     dst[i] = src[i] > UINT8_MAX ? (unsigned char) '?' : (unsigned char) src[i];
   }
-  if (dst_size > n)
-    memset(&dst[n], ' ', dst_size - n);
+  if (dst_size > n) memset(&dst[n], ' ', dst_size - n);
 }
 
 /* Convert convertable types.
@@ -1880,9 +1889,13 @@ error:
           "libcaf_mpi RUNTIME ERROR: Cannot convert type %d kind %d "
           "to type %d kind %d\n", src_type, src_kind, dst_type, dst_kind);
   if (stat)
+  {
     *stat = 1;
+  }
   else
+  {
     abort();
+  }
 }
 
 static void
@@ -1929,7 +1942,9 @@ copy_char_to_self(void *src, int src_type, int src_size, int src_kind,
         int32_t * dest_addr = (int32_t *)(dst + dst_kind * src_len);
         const size_t pad_num = dst_len - src_len;
         if (dst_kind == 1)
+        {
           memset(dest_addr, ' ', pad_num);
+        }
         else if (dst_kind == 4)
         {
           const void * end_addr = &(dest_addr[pad_num]);
@@ -1940,8 +1955,7 @@ copy_char_to_self(void *src, int src_type, int src_size, int src_kind,
           caf_runtime_error(unreachable);
       }
       dst = (void *)((ptrdiff_t)(dst) + dst_size);
-      if (!src_is_scalar)
-        src = (void *)((ptrdiff_t)(src) + src_size);
+      if (!src_is_scalar) src = (void *)((ptrdiff_t)(src) + src_size);
     }
   }
   else
@@ -1952,16 +1966,14 @@ copy_char_to_self(void *src, int src_type, int src_size, int src_kind,
       {
         assign_char1_from_char4(dst_len, src_len, dst, src);
         dst = (void *)((ptrdiff_t)(dst) + dst_size);
-        if (!src_is_scalar)
-          src = (void *)((ptrdiff_t)(src) + src_size);
+        if (!src_is_scalar) src = (void *)((ptrdiff_t)(src) + src_size);
       }
     else if (dst_kind == 4 && src_kind == 1)
       for (size_t c = 0; c < size; ++c)
       {
         assign_char4_from_char1(dst_len, src_len, dst, src);
         dst = (void *)((ptrdiff_t)(dst) + dst_size);
-        if (!src_is_scalar)
-          src = (void *)((ptrdiff_t)(src) + src_size);
+        if (!src_is_scalar) src = (void *)((ptrdiff_t)(src) + src_size);
       }
     else
       caf_runtime_error("_caf_send(): Unsupported char kinds in same image "
@@ -1982,8 +1994,11 @@ copy_to_self(gfc_descriptor_t *src, int src_kind,
   /* The address of dest passed by the compiler points on the right
    * memory location. No offset summation is needed. */
   if (dst_kind == src_kind)
+  {
     memmove(dest->base_addr, src->base_addr, size * GFC_DESCRIPTOR_SIZE(dest));
+  }
   else
+  {
     /* When the rank is 0 then a scalar is copied to a vector and the stride
      * is zero. */
     convert_with_strides(dest->base_addr, GFC_DESCRIPTOR_TYPE(dest), dst_kind,
@@ -1991,6 +2006,7 @@ copy_to_self(gfc_descriptor_t *src, int src_kind,
                          GFC_DESCRIPTOR_TYPE(src), src_kind,
                          (GFC_DESCRIPTOR_RANK(src) > 0)
                          ? GFC_DESCRIPTOR_SIZE(src) : 0, size, stat);
+    }
 }
 
 /* token: The token of the array to be written to. 
@@ -2048,14 +2064,12 @@ PREFIX(sendget) (caf_token_t token_s, size_t offset_s, int image_index_s,
   const bool
     src_same_image = caf_this_image == image_index_g,
     dst_same_image = caf_this_image == image_index_s,
-    same_type_and_kind = dst_type == src_type && dst_kind == src_kind;
+    same_type_and_kind = (dst_type == src_type) && (dst_kind == src_kind);
 
   MPI_Win *p = TOKEN(token_g);
   ptrdiff_t src_offset = 0, dst_offset = 0;
-  void *pad_str = NULL;
-  bool free_pad_str = false;
-  void *src_t_buff = NULL, *dst_t_buff = NULL;
-  bool free_src_t_buff = false, free_dst_t_buff = false;
+  void *pad_str = NULL, *src_t_buff = NULL, *dst_t_buff = NULL;
+  bool free_pad_str = false, free_src_t_buff = false, free_dst_t_buff = false;
   const bool
     dest_char_array_is_longer = dst_type == BT_CHARACTER && dst_size > src_size;
   const int
@@ -2065,8 +2079,7 @@ PREFIX(sendget) (caf_token_t token_s, size_t offset_s, int image_index_s,
   /* Ensure stat is always set. */
 #ifdef GCC_GE_7
   int * stat = pstat;
-  if (stat)
-    *stat = 0;
+  if (stat) *stat = 0;
 #else
   /* Gcc prior to 7.0 does not have stat here. */
   int * stat = NULL;
@@ -2076,18 +2089,18 @@ PREFIX(sendget) (caf_token_t token_s, size_t offset_s, int image_index_s,
   for (j = 0; j < dst_rank; ++j)
   {
     dimextent = dest->dim[j]._ubound - dest->dim[j].lower_bound + 1;
-    if (dimextent < 0)
-      dimextent = 0;
+    if (dimextent < 0) dimextent = 0;
     size *= dimextent;
   }
 
-  if (size == 0)
-    return;
+  if (size == 0) return;
 
   dprint("src_vector = %p, dst_vector = %p, src_image_index = %d, "
-         "dst_image_index = %d, offset_src = %zd, offset_dst = %zd.\n",
-         src_vector, dst_vector, image_index_g, image_index_s,
-         offset_g, offset_s);
+         "dst_image_index = %d, offset_src = %zd, offset_dst = %zd, "
+         "src_same_image = %s, dst_same_image = %s, same_type_and_kind = %s.\n",
+         src_vector, dst_vector, image_index_g, image_index_s, offset_g,
+         offset_s, src_same_image ? "T":"F", dst_same_image ? "T":"F", 
+         same_type_and_kind ? "T":"F");
   check_image_health(image_index_g, stat);
   check_image_health(image_index_s, stat);
 
@@ -2102,8 +2115,8 @@ PREFIX(sendget) (caf_token_t token_s, size_t offset_s, int image_index_s,
     {
       pad_str = malloc(pad_sz);
       if (src_t_buff == NULL)
-        caf_runtime_error("Unable to allocate memory "
-                          "for internal buffer in sendget().");
+        caf_runtime_error("Unable to allocate memory for internal buffer "
+                          "in sendget().");
     }
     if (dst_kind == 1)
     {
@@ -2138,8 +2151,8 @@ PREFIX(sendget) (caf_token_t token_s, size_t offset_s, int image_index_s,
         {
           dst_t_buff = malloc(dst_size * size);
           if (dst_t_buff == NULL)
-            caf_runtime_error("Unable to allocate memory "
-                              "for internal buffer in sendget().");
+            caf_runtime_error("Unable to allocate memory for internal buffer "
+                              "in sendget().");
         }
         if (dst_type == BT_CHARACTER)
         {
@@ -2165,8 +2178,8 @@ PREFIX(sendget) (caf_token_t token_s, size_t offset_s, int image_index_s,
       {
         dst_t_buff = malloc(dst_size * size);
         if (dst_t_buff == NULL)
-          caf_runtime_error("Unable to allocate memory "
-                            "for internal buffer in sendget().");
+          caf_runtime_error("Unable to allocate memory for internal buffer "
+                            "in sendget().");
       }
 
       if (dst_kind != src_kind || src_rank == 0 || dest_char_array_is_longer)
@@ -2175,8 +2188,8 @@ PREFIX(sendget) (caf_token_t token_s, size_t offset_s, int image_index_s,
         {
           src_t_buff = malloc(src_size * size);
           if (src_t_buff == NULL)
-            caf_runtime_error("Unable to allocate memory "
-                              "for internal buffer in sendget().");
+            caf_runtime_error("Unable to allocate memory for internal buffer "
+                              "in sendget().");
         }
       }
       else
@@ -2231,8 +2244,8 @@ PREFIX(sendget) (caf_token_t token_s, size_t offset_s, int image_index_s,
     {
       dst_t_buff = malloc(dst_size * size);
       if (dst_t_buff == NULL)
-        caf_runtime_error("Unable to allocate memory "
-                          "for internal buffer in sendget().");
+        caf_runtime_error("Unable to allocate memory for internal buffer "
+                          "in sendget().");
     }
 
     selectType(src_size, &base_type_src);
@@ -2350,11 +2363,9 @@ case kind:                                                            \
 #ifdef WITH_FAILED_IMAGES
     check_image_health(image_index_g, stat);
 
-    if (!stat && ierr == STAT_FAILED_IMAGE)
-      terminate_internal(ierr, 1);
+    if (!stat && ierr == STAT_FAILED_IMAGE) terminate_internal(ierr, 1);
 
-    if (stat)
-      *stat = ierr;
+    if (stat) *stat = ierr;
 #else
     if (ierr != 0)
     {
@@ -2372,25 +2383,26 @@ case kind:                                                            \
     {
       dst_t_buff = malloc(dst_size * size);
       if (dst_t_buff == NULL)
-        caf_runtime_error("Unable to allocate memory "
-                          "for internal buffer in sendget().");
+        caf_runtime_error("Unable to allocate memory for internal buffer "
+                          "in sendget().");
     }
 
     if (src_same_image)
+    {
       src_t_buff = src->base_addr;
+    }
     else if (!same_type_and_kind)
     {
       if ((free_src_t_buff = (((src_t_buff = alloca(src_size))) == NULL)))
       {
         src_t_buff = malloc(src_size);
         if (src_t_buff == NULL)
-          caf_runtime_error("Unable to allocate memory "
-                            "for internal buffer in sendget().");
+          caf_runtime_error("Unable to allocate memory for internal buffer "
+                            "in sendget().");
       }
     }
 
-    if (!src_same_image)
-      CAF_Win_lock(MPI_LOCK_SHARED, src_remote_image, *p);
+    if (!src_same_image) CAF_Win_lock(MPI_LOCK_SHARED, src_remote_image, *p);
     for (i = 0; i < size; ++i)
     {
       ptrdiff_t array_offset_sr = 0, extent = 1, tot_ext = 1;
@@ -2496,8 +2508,7 @@ case kind:                                                          \
       }
 #endif
     }
-    if (!src_same_image)
-      CAF_Win_unlock(src_remote_image, *p);
+    if (!src_same_image) CAF_Win_unlock(src_remote_image, *p);
   }
 
   p = TOKEN(token_s);
@@ -2505,7 +2516,9 @@ case kind:                                                          \
   if (dst_contiguous && dst_vector == NULL)
   {
     if (dst_same_image)
+    {
       memmove(dest->base_addr, dst_t_buff, dst_size * size);
+    }
     else
     {
       CAF_Win_lock(MPI_LOCK_EXCLUSIVE, dst_remote_image, *p);
@@ -2585,9 +2598,7 @@ case kind:                                                              \
         }
 #undef KINDCASE
         ierr = MPI_Type_indexed(size, arr_bl, arr_dsp_d, base_type_dst, &dt_d);
-        chk_err(ierr);
-        free(arr_bl);
-        free(arr_dsp_d);
+        chk_err(ierr); free(arr_bl); free(arr_dsp_d);
       }
       ierr = MPI_Type_vector(size, 1, 1, base_type_dst, &dt_s); chk_err(ierr);
     }
@@ -2659,11 +2670,9 @@ case kind:                                                              \
 #ifdef WITH_FAILED_IMAGES
     check_image_health(image_index_s, stat);
 
-    if (!stat && ierr == STAT_FAILED_IMAGE)
-      terminate_internal(ierr, 1);
+    if (!stat && ierr == STAT_FAILED_IMAGE) terminate_internal(ierr, 1);
 
-    if (stat)
-      *stat = ierr;
+    if (stat) *stat = ierr;
 #else
     if (ierr != 0)
     {
@@ -2737,17 +2746,13 @@ case kind:                                                           \
       }
 #endif
     } /* for */
-    if (!dst_same_image)
-      CAF_Win_unlock(dst_remote_image, *p);
+    if (!dst_same_image) CAF_Win_unlock(dst_remote_image, *p);
   }
 
   /* Free memory, when not allocated on stack. */
-  if (free_src_t_buff)
-    free(src_t_buff);
-  if (free_dst_t_buff)
-    free(dst_t_buff);
-  if (free_pad_str)
-    free(pad_str);
+  if (free_src_t_buff) free(src_t_buff);
+  if (free_dst_t_buff) free(dst_t_buff);
+  if (free_pad_str) free(pad_str);
 
 #ifdef WITH_FAILED_IMAGES
   /* Catch failed images, when failed image support is active. */
@@ -2760,7 +2765,9 @@ case kind:                                                           \
     int mpi_error;
     MPI_Error_class(ierr, &mpi_error);
     if (stat)
+    {
       *stat = mpi_error;
+    }
     else
     {
       int error_len = 2048;
@@ -2812,8 +2819,7 @@ PREFIX(send) (caf_token_t token, size_t offset, int image_index,
   /* Ensure stat is always set. */
 #ifdef GCC_GE_7
   int * stat = pstat;
-  if (stat)
-    *stat = 0;
+  if (stat) *stat = 0;
 #else
   /* Gcc prior to 7.0 does not have stat here. */
   int * stat = NULL;
@@ -2823,13 +2829,11 @@ PREFIX(send) (caf_token_t token, size_t offset, int image_index,
   for (j = 0; j < dst_rank; ++j)
   {
     dimextent = dest->dim[j]._ubound - dest->dim[j].lower_bound + 1;
-    if (dimextent < 0)
-      dimextent = 0;
+    if (dimextent < 0) dimextent = 0;
     size *= dimextent;
   }
 
-  if (size == 0)
-    return;
+  if (size == 0) return;
 
   dprint("dst_vector = %p, image_index = %d, offset = %zd.\n",
          dst_vector, image_index, offset);
@@ -2846,11 +2850,13 @@ PREFIX(send) (caf_token_t token, size_t offset, int image_index,
     {
       pad_str = malloc(pad_sz);
       if (t_buff == NULL)
-        caf_runtime_error("Unable to allocate memory "
-                          "for internal buffer in send().");
+        caf_runtime_error("Unable to allocate memory for internal buffer "
+                          "in send().");
     }
     if (dst_kind == 1)
+    {
       memset(pad_str, ' ', pad_num);
+    }
     else /* dst_kind == 4. */
     {
       for (int32_t *it = (int32_t *) pad_str,
@@ -2868,12 +2874,16 @@ PREFIX(send) (caf_token_t token, size_t offset, int image_index,
       dprint("in caf_this == image_index, size = %zd, dst_kind = %d, "
              "src_kind = %d\n", size, dst_kind, src_kind);
       if (dst_type == BT_CHARACTER)
+      {
         /* The size is encoded in the descriptor's type for char arrays. */
         copy_char_to_self(src->base_addr, src_type, src_size, src_kind,
                           dest->base_addr, dst_type, dst_size, dst_kind,
                           size, src_rank == 0);
+      }
       else
+      {
         copy_to_self(src, src_kind, dest, dst_kind, size, stat);
+      }
       return;
     }
     else
@@ -2885,8 +2895,8 @@ PREFIX(send) (caf_token_t token, size_t offset, int image_index,
         {
           t_buff = malloc(dst_size * size);
           if (t_buff == NULL)
-            caf_runtime_error("Unable to allocate memory "
-                              "for internal buffer in send().");
+            caf_runtime_error("Unable to allocate memory for internal buffer "
+                              "in send().");
         }
       }
 
@@ -3094,8 +3104,7 @@ case kind:                                                            \
     if (!stat && ierr == STAT_FAILED_IMAGE)
       terminate_internal(ierr, 1);
 
-    if (stat)
-      *stat = ierr;
+    if (stat) *stat = ierr;
 #else
     if (ierr != 0)
     {
@@ -3115,8 +3124,8 @@ case kind:                                                            \
       {
         t_buff = malloc(dst_size * size);
         if (t_buff == NULL)
-          caf_runtime_error("Unable to allocate memory "
-                            "for internal buffer in send().");
+          caf_runtime_error("Unable to allocate memory for internal buffer "
+                            "in send().");
       }
     }
     else if (!same_type_and_kind && !same_image)
@@ -3125,8 +3134,8 @@ case kind:                                                            \
       {
         t_buff = malloc(dst_size);
         if (t_buff == NULL)
-          caf_runtime_error("Unable to allocate memory "
-                            "for internal buffer in send().");
+          caf_runtime_error("Unable to allocate memory for internal buffer "
+                            "in send().");
       }
     }
 
@@ -3305,10 +3314,8 @@ case kind:                                                            \
   }
 
   /* Free memory, when not allocated on stack. */
-  if (free_t_buff)
-    free(t_buff);
-  if (free_pad_str)
-    free(pad_str);
+  if (free_t_buff) free(t_buff);
+  if (free_pad_str) free(pad_str);
 
 #ifdef WITH_FAILED_IMAGES
   /* Catch failed images, when failed image support is active. */
@@ -3320,7 +3327,9 @@ case kind:                                                            \
     int mpi_error;
     MPI_Error_class(ierr, &mpi_error);
     if (stat)
+    {
       *stat = mpi_error;
+    }
     else
     {
       int error_len = 2048;
@@ -3370,8 +3379,7 @@ PREFIX(get) (caf_token_t token, size_t offset, int image_index,
   /* Ensure stat is always set. */
 #ifdef GCC_GE_7
   int * stat = pstat;
-  if (stat)
-    *stat = 0;
+  if (stat) *stat = 0;
 #else
   /* Gcc prior to 7.0 does not have stat here. */
   int * stat = NULL;
@@ -3381,13 +3389,11 @@ PREFIX(get) (caf_token_t token, size_t offset, int image_index,
   for (j = 0; j < dst_rank; ++j)
   {
     dimextent = dest->dim[j]._ubound - dest->dim[j].lower_bound + 1;
-    if (dimextent < 0)
-      dimextent = 0;
+    if (dimextent < 0) dimextent = 0;
     size *= dimextent;
   }
 
-  if (size == 0)
-    return;
+  if (size == 0) return;
 
   dprint("src_vector = %p, image_index = %d, offset = %zd.\n",
          src_vector, image_index, offset);
@@ -3404,11 +3410,13 @@ PREFIX(get) (caf_token_t token, size_t offset, int image_index,
     {
       pad_str = malloc(pad_sz);
       if (t_buff == NULL)
-        caf_runtime_error("Unable to allocate memory "
-                          "for internal buffer in get().");
+        caf_runtime_error("Unable to allocate memory for internal buffer "
+                          "in get().");
     }
     if (dst_kind == 1)
+    {
       memset(pad_str, ' ', pad_num);
+    }
     else /* dst_kind == 4. */
     {
       for (int32_t *it = (int32_t *) pad_str,
@@ -3427,12 +3435,16 @@ PREFIX(get) (caf_token_t token, size_t offset, int image_index,
              "dst_kind = %d, src_kind = %d\n",
              size, dst_kind, src_kind);
       if (dst_type == BT_CHARACTER)
+      {
         /* The size is encoded in the descriptor's type for char arrays. */
         copy_char_to_self(src->base_addr, src_type, src_size, src_kind,
                           dest->base_addr, dst_type, dst_size, dst_kind,
                           size, src_rank == 0);
+      }
       else
+      {
         copy_to_self(src, src_kind, dest, dst_kind, size, stat);
+      }
       return;
     }
     else
@@ -3444,8 +3456,8 @@ PREFIX(get) (caf_token_t token, size_t offset, int image_index,
         {
           t_buff = malloc(src_size * size);
           if (t_buff == NULL)
-            caf_runtime_error("Unable to allocate memory "
-                              "for internal buffer in get().");
+            caf_runtime_error("Unable to allocate memory for internal buffer "
+                              "in get().");
         }
       }
 
@@ -3629,11 +3641,9 @@ case kind:                                                            \
 #ifdef WITH_FAILED_IMAGES
     check_image_health(image_index, stat);
 
-    if (!stat && ierr == STAT_FAILED_IMAGE)
-      terminate_internal(ierr, 1);
+    if (!stat && ierr == STAT_FAILED_IMAGE) terminate_internal(ierr, 1);
 
-    if (stat)
-      *stat = ierr;
+    if (stat) *stat = ierr;
 #else
     if (ierr != 0)
     {
@@ -3653,8 +3663,8 @@ case kind:                                                            \
       {
         t_buff = malloc(src_size * size);
         if (t_buff == NULL)
-          caf_runtime_error("Unable to allocate memory "
-                            "for internal buffer in get().");
+          caf_runtime_error("Unable to allocate memory for internal buffer "
+                            "in get().");
       }
     }
     else if (!same_type_and_kind && !same_image)
@@ -3663,13 +3673,13 @@ case kind:                                                            \
       {
         t_buff = malloc(src_size);
         if (t_buff == NULL)
-          caf_runtime_error("Unable to allocate memory "
-                            "for internal buffer in get().");
+          caf_runtime_error("Unable to allocate memory for internal buffer "
+                            "in get().");
       }
     }
 
-    if (!same_image)
-      CAF_Win_lock(MPI_LOCK_SHARED, remote_image, *p);
+    if (!same_image) CAF_Win_lock(MPI_LOCK_SHARED, remote_image, *p);
+
     for (i = 0; i < size; ++i)
     {
       ptrdiff_t array_offset_sr = 0, extent = 1, tot_ext = 1;
@@ -3743,8 +3753,10 @@ case kind:                                                          \
                          offset + src_offset, trans_size, MPI_BYTE, *p);
           chk_err(ierr);
           if (pad_str)
+          {
             memcpy((void *)((char *)dst + src_size), pad_str,
                    dst_size - src_size);
+          }
         }
         else if (dst_type == BT_CHARACTER)
         {
@@ -3771,10 +3783,14 @@ case kind:                                                          \
                  "src_offset = %zd, offset = %zd.\n",
                  i, src_offset, offset);
           if (same_type_and_kind)
+          {
             memmove(dst, src->base_addr + src_offset, src_size);
+          }
           else
+          {
             convert_type(dst, dst_type, dst_kind,
                          src->base_addr + src_offset, src_type, src_kind, stat);
+          }
         }
         else
         {
@@ -3807,10 +3823,8 @@ case kind:                                                          \
   }
 
   /* Free memory, when not allocated on stack. */
-  if (free_t_buff)
-    free(t_buff);
-  if (free_pad_str)
-    free(pad_str);
+  if (free_t_buff) free(t_buff);
+  if (free_pad_str) free(pad_str);
 
 #ifdef WITH_FAILED_IMAGES
   /* Catch failed images, when failed image support is active. */
@@ -3822,7 +3836,9 @@ case kind:                                                          \
     int mpi_error;
     MPI_Error_class(ierr, &mpi_error);
     if (stat)
+    {
       *stat = mpi_error;
+    }
     else
     {
       int error_len = 2048 - 11;
@@ -4022,7 +4038,9 @@ get_for_ref(caf_reference_t *ref, size_t *i, size_t dst_index,
           sr_byte_offset = 0;
         }
         else
+        {
           sr_byte_offset += ref->u.c.offset;
+        }
         if (sr_global)
         {
           get_data(ds, NULL, MPI_Aint_add((MPI_Aint)sr, sr_byte_offset),
@@ -4510,8 +4528,7 @@ PREFIX(get_by_ref) (caf_token_t token, int image_index,
 
   realloc_needed = realloc_required = dst->base_addr == NULL;
 
-  if (stat)
-    *stat = 0;
+  if (stat) *stat = 0;
 
   check_image_health(image_index, stat);
 
@@ -4682,8 +4699,7 @@ case kind:                                                              \
               caf_runtime_error(unknownarrreftype, stat, NULL, 0);
               return;
           }
-          if (delta <= 0)
-            return;
+          if (delta <= 0) return;
           /* Check the various properties of the destination array.
            * Is an array expected and present? */
           if (delta > 1 && dst_rank == 0)
@@ -4773,8 +4789,7 @@ case kind:                                                              \
                 dst->dim[dst_cur_dim].lower_bound = 1;
                 dst->dim[dst_cur_dim]._ubound = delta;
                 dst->dim[dst_cur_dim]._stride = size;
-                if (realloc_required)
-                  dst->offset = -1;
+                if (realloc_required) dst->offset = -1;
               }
             }
 
@@ -4784,7 +4799,9 @@ case kind:                                                              \
               /* Mode != CAF_ARR_REF_SINGLE(delta == 1), and no rank
                * reduction */
               if (!(delta == 1 && dst_rank != GFC_DESCRIPTOR_RANK(src)))
+              {
                 ++dst_cur_dim;
+              }
             }
           }
           size *= (ptrdiff_t)delta;
@@ -4854,8 +4871,7 @@ case kind:                                                      \
               caf_runtime_error(unknownarrreftype, stat, NULL, 0);
               return;
           }
-          if (delta <= 0)
-            return;
+          if (delta <= 0) return;
           /* Check the various properties of the destination array.
            * Is an array expected and present? */
           if (delta > 1 && dst_rank == 0)
@@ -4928,8 +4944,7 @@ case kind:                                                      \
                 dst->dim[dst_cur_dim].lower_bound = 1;
                 dst->dim[dst_cur_dim]._ubound = delta;
                 dst->dim[dst_cur_dim]._stride = size;
-                if (realloc_required)
-                  dst->offset = -1;
+                if (realloc_required) dst->offset = -1;
               }
             }
             /* Only increase the dim counter, when in an array ref */
@@ -4938,7 +4953,9 @@ case kind:                                                      \
               /* Mode != CAF_ARR_REF_SINGLE(delta == 1), and no rank
                * reduction */
               if (!(delta == 1 && dst_rank != GFC_DESCRIPTOR_RANK(src)))
+              {
                 ++dst_cur_dim;
+              }
             }
           }
           size *= (ptrdiff_t)delta;
@@ -4956,8 +4973,7 @@ case kind:                                                      \
     src_size = riter->item_size;
     riter = riter->next;
   }
-  if (size == 0 || src_size == 0)
-    return;
+  if (size == 0 || src_size == 0) return;
   /* Postcondition:
    * - size contains the number of elements to store in the destination array,
    * - src_size gives the size in bytes of each item in the destination array.
@@ -5684,16 +5700,16 @@ PREFIX(send_by_ref) (caf_token_t token, int image_index,
   bool free_temp_src = false;
   caf_array_ref_t array_ref;
 
-  if (stat)
-    *stat = 0;
+  if (stat) *stat = 0;
 
   check_image_health(image_index, stat);
 
-  dprint("Entering send_by_ref(may_require_tmp = %d", may_require_tmp);
 #ifdef GCC_GE_8
-  fprintf(stderr, ", dst_type = %d", dst_type);
+  dprint("Entering send_by_ref(may_require_tmp = %d, dst_type = %d)\n",
+         may_require_tmp, dst_type);
+#else
+  dprint("Entering send_by_ref(may_require_tmp = %d)\n", may_require_tmp);
 #endif
-  fprintf(stderr, ").\n");
 
   /* Compute the size of the result.  In the beginning size just counts the
    * number of elements. */
@@ -5859,10 +5875,8 @@ case kind:                                                              \
               caf_runtime_error(unknownarrreftype, stat, NULL, 0);
               return;
           } // switch
-          if (delta <= 0)
-            return;
-          if (dst != NULL)
-            dst_rank = GFC_DESCRIPTOR_RANK(dst);
+          if (delta <= 0) return;
+          if (dst != NULL) dst_rank = GFC_DESCRIPTOR_RANK(dst);
           /* Check the various properties of the destination array.
            * Is an array expected and present? */
           if (delta > 1 && dst_rank == 0)
@@ -5913,8 +5927,7 @@ case kind:                                                              \
               }
             }
 
-            if (src_cur_dim < GFC_DESCRIPTOR_RANK(src))
-              ++src_cur_dim;
+            if (src_cur_dim < GFC_DESCRIPTOR_RANK(src)) ++src_cur_dim;
           }
           size *= (ptrdiff_t)delta;
         }
@@ -5978,10 +5991,8 @@ case kind:                                                      \
               caf_runtime_error(unknownarrreftype, stat, NULL, 0);
               return;
           } // switch
-          if (delta <= 0)
-            return;
-          if (dst != NULL)
-            dst_rank = GFC_DESCRIPTOR_RANK(dst);
+          if (delta <= 0) return;
+          if (dst != NULL) dst_rank = GFC_DESCRIPTOR_RANK(dst);
           /* Check the various properties of the destination array.
            * Is an array expected and present? */
           if (delta > 1 && dst_rank == 0)
@@ -6015,8 +6026,7 @@ case kind:                                                      \
                 return;
               }
             }
-            if (src_cur_dim < GFC_DESCRIPTOR_RANK(src))
-              ++src_cur_dim;
+            if (src_cur_dim < GFC_DESCRIPTOR_RANK(src)) ++src_cur_dim;
           }
           size *= (ptrdiff_t)delta;
         }
@@ -6029,8 +6039,7 @@ case kind:                                                      \
     dst_size = riter->item_size;
     riter = riter->next;
   }
-  if (size == 0 || dst_size == 0)
-    return;
+  if (size == 0 || dst_size == 0) return;
   /* Postcondition:
    * - size contains the number of elements to store in the destination array,
    * - dst_size gives the size in bytes of each item in the destination array.
@@ -6054,6 +6063,7 @@ case kind:                                                      \
            i, src->dim[i].lower_bound, src->dim[i]._ubound);
   }
 #endif
+
   /* When accessing myself and may_require_tmp is set, then copy the source
    * array. */
   if (caf_this_image == image_index && may_require_tmp)
@@ -6091,10 +6101,7 @@ case kind:                                                      \
                , dst_type
 #endif
                );
-  if (free_temp_src)
-  {
-    free(temp_src.base.base_addr);
-  }
+  if (free_temp_src) free(temp_src.base.base_addr);
   CAF_Win_unlock(remote_image, global_dynamic_win);
   CAF_Win_unlock(remote_image, mpi_token->memptr_win);
 }
@@ -6147,8 +6154,7 @@ PREFIX(sendget_by_ref) (caf_token_t dst_token, int dst_image_index,
   int dst_type = -1, src_type = -1;
 #endif
 
-  if (src_stat)
-    *src_stat = 0;
+  if (src_stat) *src_stat = 0;
 
   check_image_health(src_image_index, src_stat);
 
@@ -6322,8 +6328,7 @@ case kind:                                                              \
               caf_runtime_error(unknownarrreftype, src_stat, NULL, 0);
               return;
           } // switch
-          if (delta <= 0)
-            return;
+          if (delta <= 0) return;
           size *= (ptrdiff_t)delta;
         }
         if (in_array_ref)
@@ -6389,8 +6394,7 @@ case kind:                                                        \
               caf_runtime_error(unknownarrreftype, src_stat, NULL, 0);
               return;
           } // switch
-          if (delta <= 0)
-            return;
+          if (delta <= 0) return;
           size *= (ptrdiff_t)delta;
         }
         if (in_array_ref)
@@ -6406,8 +6410,7 @@ case kind:                                                        \
       src_size = riter->item_size;
       riter = riter->next;
     }
-  if (size == 0 || src_size == 0)
-    return;
+  if (size == 0 || src_size == 0) return;
   /* Postcondition:
    * - size contains the number of elements to store in the destination array,
    * - src_size gives the size in bytes of each item in the destination array.
@@ -6540,7 +6543,8 @@ PREFIX(is_present) (caf_token_t token, int image_index, caf_reference_t *refs)
           for (i = 0; riter->u.a.mode[i] != CAF_ARR_REF_NONE; ++i)
           {
             array_ref = riter->u.a.mode[i];
-            dprint("i = %zd, array_ref = %s\n", i, caf_array_ref_str[array_ref]);
+            dprint("i = %zd, array_ref = %s\n",
+                   i, caf_array_ref_str[array_ref]);
             switch (array_ref)
             {
               case CAF_ARR_REF_FULL:
@@ -6639,7 +6643,9 @@ PREFIX(is_present) (caf_token_t token, int image_index, caf_reference_t *refs)
               break;
           }
           if (riter->u.a.mode[i] != CAF_ARR_REF_NONE)
+          {
             caf_runtime_error(remotesInnerRefNA);
+          }
           break;
         }
         if (firstDesc)
@@ -6780,8 +6786,7 @@ sync_images_internal(int count, int images[], int *stat, char *errmsg,
   dprint("Entering\n");
   if (count == 0 || (count == 1 && images[0] == caf_this_image))
   {
-    if (stat)
-      *stat = 0;
+    if (stat) *stat = 0;
 #ifdef WITH_FAILED_IMAGES
     no_stopped_images_check_in_errhandler = false;
 #endif
@@ -6797,8 +6802,7 @@ sync_images_internal(int count, int images[], int *stat, char *errmsg,
       if (images[i] == images[j])
       {
         ierr = STAT_DUP_SYNC_IMAGES;
-        if (stat)
-          *stat = ierr;
+        if (stat) *stat = ierr;
         goto sync_images_err_chk;
       }
     }
@@ -6911,10 +6915,14 @@ sync_images_err_chk:
 #endif
   dprint("Leaving\n");
   if (stat)
+  {
     *stat = ierr;
+  }
 #ifdef WITH_FAILED_IMAGES
   else if (ierr == STAT_FAILED_IMAGE)
+  {
     terminate_internal(ierr, 0);
+  }
 #endif
 
   if (ierr != 0 && ierr != STAT_FAILED_IMAGE)
@@ -6928,8 +6936,7 @@ sync_images_err_chk:
     {
       size_t len = (strlen(msg) > errmsg_len) ? errmsg_len : strlen (msg);
       memcpy(errmsg, msg, len);
-      if (errmsg_len > len)
-        memset(&errmsg[len], ' ', errmsg_len-len);
+      if (errmsg_len > len) memset(&errmsg[len], ' ', errmsg_len-len);
     }
     else if (!internal && stat == NULL)
       caf_runtime_error(msg);
@@ -7217,8 +7224,7 @@ error:
   if (stat)
   {
     *stat = ierr;
-    if (!errmsg)
-      return;
+    if (!errmsg) return;
   }
 
   int len = sizeof(err_buffer);
@@ -7229,8 +7235,7 @@ error:
     caf_runtime_error("CO_SUM failed with %s\n", err_buffer);
   }
   memcpy(errmsg, err_buffer, (errmsg_len > len) ? len : errmsg_len);
-  if (errmsg_len > len)
-    memset(&errmsg[len], '\0', errmsg_len - len);
+  if (errmsg_len > len) memset(&errmsg[len], '\0', errmsg_len - len);
 }
 
 void
@@ -7318,8 +7323,7 @@ error:
   if (stat)
   {
     *stat = ierr;
-    if (!errmsg)
-      return;
+    if (!errmsg) return;
   }
 
   int len = sizeof(err_buffer);
@@ -7330,8 +7334,7 @@ error:
     caf_runtime_error("CO_SUM failed with %s\n", err_buffer);
   }
   memcpy(errmsg, err_buffer, (errmsg_len > len) ? len : errmsg_len);
-  if (errmsg_len > len)
-    memset(&errmsg[len], '\0', errmsg_len - len);
+  if (errmsg_len > len) memset(&errmsg[len], '\0', errmsg_len - len);
 }
 
 /* The front-end function for co_reduce functionality.  It sets up the MPI_Op
@@ -7501,9 +7504,13 @@ PREFIX(atomic_define) (caf_token_t token, size_t offset,
 #endif // MPI_VERSION
 
   if (stat)
+  {
     *stat = ierr;
+  }
   else if (ierr != 0)
+  {
     terminate_internal(ierr, 0);
+  }
 
   return;
 }
@@ -7533,9 +7540,13 @@ PREFIX(atomic_ref) (caf_token_t token, size_t offset,
 #endif // MPI_VERSION
 
   if (stat)
+  {
     *stat = ierr;
+  }
   else if (ierr != 0)
+  {
     terminate_internal(ierr, 0);
+  }
 
   return;
 }
@@ -7564,9 +7575,13 @@ PREFIX(atomic_cas) (caf_token_t token, size_t offset, int image_index,
 #endif // MPI_VERSION
 
   if (stat)
+  {
     *stat = ierr;
+  }
   else if (ierr != 0)
+  {
     terminate_internal(ierr, 0);
+  }
 
   return;
 }
@@ -7587,7 +7602,8 @@ PREFIX(atomic_op) (int op, caf_token_t token, size_t offset, int image_index,
 
   CAF_Win_lock(MPI_LOCK_EXCLUSIVE, image, *p);
   /* Atomic_add */
-  switch(op) {
+  switch(op)
+  {
     case 1:
       ierr = MPI_Fetch_and_op(value, old, dt, image, offset, MPI_SUM, *p);
       chk_err(ierr);
@@ -7617,9 +7633,13 @@ PREFIX(atomic_op) (int op, caf_token_t token, size_t offset, int image_index,
   printf("We apologize but atomic_op for MPI < 3 is not yet implemented\n");
 #endif // MPI_VERSION
   if (stat)
+  {
     *stat = ierr;
+  }
   else if (ierr != 0)
+  {
     terminate_internal(ierr, 0);
+  }
 
   return;
 }
@@ -7656,8 +7676,7 @@ PREFIX(event_post) (caf_token_t token, size_t index, int image_index,
 
   if (ierr != MPI_SUCCESS)
   {
-    if (stat != NULL)
-      *stat = ierr;
+    if (stat != NULL) *stat = ierr;
     if (errmsg != NULL)
     {
       memset(errmsg,' ',errmsg_len);
@@ -7713,8 +7732,7 @@ PREFIX(event_wait) (caf_token_t token, size_t index, int until_count,
 
   if (ierr != MPI_SUCCESS)
   {
-    if (stat != NULL)
-      *stat = ierr;
+    if (stat != NULL) *stat = ierr;
     if (errmsg != NULL)
     {
       memset(errmsg,' ',errmsg_len);
@@ -7731,8 +7749,7 @@ PREFIX(event_query) (caf_token_t token, size_t index,
   int ierr = 0,
       image = (image_index == 0) ? caf_this_image - 1 : image_index - 1;
 
-  if (stat != NULL)
-    *stat = 0;
+  if (stat != NULL) *stat = 0;
 
 #if MPI_VERSION >= 3
   CAF_Win_lock(MPI_LOCK_EXCLUSIVE, image, *p);
@@ -7744,8 +7761,7 @@ PREFIX(event_query) (caf_token_t token, size_t index,
   printf("Events for MPI-2 are not supported, "
          "please update your MPI implementation\n");
 #endif // MPI_VERSION
-  if (ierr != MPI_SUCCESS && stat != NULL)
-    *stat = ierr;
+  if (ierr != MPI_SUCCESS && stat != NULL) *stat = ierr;
 }
 
 
@@ -7779,8 +7795,7 @@ PREFIX(stop_numeric) (int stop_code QUIETARG)
 #ifndef GCC_GE_8
   bool quiet = false;
 #endif
-  if (!quiet)
-    fprintf(stderr, "STOP %d\n", stop_code);
+  if (!quiet) fprintf(stderr, "STOP %d\n", stop_code);
 
   /* Stopping includes taking down the runtime regularly and returning the
    * stop_code. */
@@ -8138,8 +8153,9 @@ void PREFIX(change_team) (caf_team_t *team,
 MPI_Fint
 PREFIX(get_communicator) (caf_team_t *team)
 {
-  if (team != NULL) caf_runtime_error("get_communicator does not yet support "
-                                      "the optional team argument");
+  if (team != NULL)
+    caf_runtime_error("get_communicator does not yet support "
+                      "the optional team argument");
 
   MPI_Comm* comm_ptr = teams_list->team;
   MPI_Fint ret = MPI_Comm_c2f(*comm_ptr);
@@ -8151,8 +8167,9 @@ PREFIX(get_communicator) (caf_team_t *team)
 int
 PREFIX(team_number) (caf_team_t *team)
 {
-  if (team != NULL) caf_runtime_error("team_number does not yet support "
-                                      "the optional team argument");
+  if (team != NULL)
+    caf_runtime_error("team_number does not yet support "
+                      "the optional team argument");
 
   // if (used_teams->prev == NULL) 
   //   return -1;

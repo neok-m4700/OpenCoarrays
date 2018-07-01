@@ -1,4 +1,4 @@
-if (NOT MPI_C_FOUND)
+if(NOT MPI_C_FOUND)
   find_package(MPI REQUIRED)
 
   set(CMAKE_C_COMPILE_FLAGS "${CMAKE_C_COMPILE_FLAGS} ${MPI_C_COMPILE_FLAGS}")
@@ -15,14 +15,13 @@ cmake_host_system_information(RESULT N_CPU QUERY NUMBER_OF_LOGICAL_CORES)
 set(N_CPU ${N_CPU} PARENT_SCOPE)
 cmake_host_system_information(RESULT HOST_NAME QUERY HOSTNAME)
 set(HOSTNAME ${HOSTNAME} PARENT_SCOPE)
-execute_process(COMMAND ${MPIEXEC} --version
-  OUTPUT_VARIABLE mpi_version_out)
-if (mpi_version_out MATCHES "[Oo]pen[ -][Mm][Pp][Ii]")
+execute_process(COMMAND ${MPIEXEC} --version OUTPUT_VARIABLE mpi_version_out)
+if(mpi_version_out MATCHES "[Oo]pen[ -][Mm][Pp][Ii]")
   message( STATUS "OpenMPI detected")
-  set ( openmpi true PARENT_SCOPE)
+  set(openmpi true PARENT_SCOPE)
   # Write out a host file because OMPI's mpiexec is dumb
   file(APPEND ${CMAKE_BINARY_DIR}/hostfile "${HOST_NAME} slots=${N_CPU}\n")
-endif ()
+endif()
 
 if("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
   set(gfortran_compiler true)
@@ -55,9 +54,9 @@ endif()
 set(MPI_HAS_FAULT_TOL_EXT YES)
 
 CHECK_INCLUDE_FILE("signal.h" HAVE_SIGNAL_H)
-if (NOT HAVE_SIGNAL_H)
+if(NOT HAVE_SIGNAL_H)
   set(MPI_HAS_FAULT_TOL_EXT NO)
-  message( FATAL_ERROR "Currently, OpenCoarrays cannot build without signal.h")
+  message(FATAL_ERROR "Currently, OpenCoarrays cannot build without signal.h")
 endif()
 
 include(CheckSymbolExists)
@@ -158,11 +157,11 @@ target_link_libraries(caf_mpi_static PRIVATE ${MPI_C_LIBRARIES} ${MPI_Fortran_LI
 
 set(CAF_SO_VERSION 0)
 if(gfortran_compiler)
-  if(NOT CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 8.0.0)
+  if(NOT CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 8)
     set(CAF_SO_VERSION 3)
-  elseif(NOT CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 7.0.0)
+  elseif(NOT CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 7)
     set(CAF_SO_VERSION 2)
-  elseif(NOT CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 6.0.0)
+  elseif(NOT CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 6)
     set(CAF_SO_VERSION 1)
   endif()
 endif()
@@ -197,12 +196,10 @@ endif()
 
 install(TARGETS caf_mpi EXPORT OpenCoarraysTargets
   DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-)
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 install(TARGETS caf_mpi_static EXPORT OpenCoarraysTargets
   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  )
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
 ##############################################
 # Configure `caf` and `cafrun` wrapper scripts
@@ -224,23 +221,20 @@ foreach( lib IN LISTS MPI_Fortran_LIBRARIES)
 endforeach()
 string(STRIP "${MPI_LIBS}" MPI_LIBS)
 set(CAF_MPI_Fortran_LINK_FLAGS "")
-foreach( lflag IN LISTS MPI_Fortran_LINK_FLAGS)
-  set(CAF_MPI_Fortran_LINK_FLAGS "${CAF_MPI_Fortran_LINK_FLAGS} ${lflag}" )
+foreach(lflag IN LISTS MPI_Fortran_LINK_FLAGS)
+  set(CAF_MPI_Fortran_LINK_FLAGS "${CAF_MPI_Fortran_LINK_FLAGS} ${lflag}")
 endforeach()
 string(STRIP "${CAF_MPI_Fortran_LINK_FLAGS}" CAF_MPI_Fortran_LINK_FLAGS)
 set(CAF_MPI_Fortran_COMPILE_FLAGS "")
-foreach( fcflag IN LISTS MPI_Fortran_COMPILE_FLAGS)
-  set(CAF_MPI_Fortran_COMPILE_FLAGS "${CAF_MPI_Fortran_COMPILE_FLAGS} ${fcflag}" )
+foreach(fcflag IN LISTS MPI_Fortran_COMPILE_FLAGS)
+  set(CAF_MPI_Fortran_COMPILE_FLAGS "${CAF_MPI_Fortran_COMPILE_FLAGS} ${fcflag}")
 endforeach()
 string(STRIP "${CAF_MPI_Fortran_COMPILE_FLAGS}" CAF_MPI_Fortran_COMPILE_FLAGS)
-set_target_properties(caf_mpi_static
-  PROPERTIES OUTPUT_NAME caf_mpi)
+set_target_properties(caf_mpi_static PROPERTIES OUTPUT_NAME caf_mpi)
 get_target_property(libcaf_static caf_mpi_static OUTPUT_NAME)
 set(CAF_LIBS "${CMAKE_INSTALL_LIBDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${libcaf_static}${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
-configure_file("${CMAKE_SOURCE_DIR}/src/extensions/caf.in" "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/caf"
-  @ONLY)
-
+configure_file("${CMAKE_SOURCE_DIR}/src/extensions/caf.in" "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/caf" @ONLY)
 
 # List of carrun.in variables needing configuration:
 #
@@ -254,8 +248,7 @@ else()
   set(HAVE_FAILED_IMG "false")
 endif()
 
-configure_file("${CMAKE_SOURCE_DIR}/src/extensions/cafrun.in" "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/cafrun"
-  @ONLY)
+configure_file("${CMAKE_SOURCE_DIR}/src/extensions/cafrun.in" "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/cafrun" @ONLY)
 
 install(PROGRAMS "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/cafrun"
   "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/caf"

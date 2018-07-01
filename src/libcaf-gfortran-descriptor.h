@@ -44,8 +44,7 @@ typedef struct descriptor_dimension
   ptrdiff_t _stride;
   ptrdiff_t lower_bound;
   ptrdiff_t _ubound;
-}
-descriptor_dimension;
+} descriptor_dimension;
 
 #ifdef GCC_GE_8
   typedef struct dtype_type
@@ -55,8 +54,7 @@ descriptor_dimension;
     signed char rank;
     signed char type;
     signed short attribute;
-  }
-  dtype_type;
+  } dtype_type;
 #endif
 
 typedef struct gfc_descriptor_t {
@@ -82,8 +80,10 @@ typedef struct gfc_descriptor_t {
 #define GFC_DESCRIPTOR_RANK(desc) (desc)->dtype.rank
 #define GFC_DESCRIPTOR_TYPE(desc) (desc)->dtype.type
 #define GFC_DESCRIPTOR_SIZE(desc) (desc)->dtype.elem_len
-#define GFC_DTYPE_TYPE_SIZE(desc) (( ((desc)->dtype.type << GFC_DTYPE_TYPE_SHIFT) \
-    | ((desc)->dtype.elem_len << GFC_DTYPE_SIZE_SHIFT) ) & GFC_DTYPE_TYPE_SIZE_MASK)
+#define GFC_DTYPE_TYPE_SIZE(desc) ((                  \
+    ((desc)->dtype.type << GFC_DTYPE_TYPE_SHIFT) |    \
+    ((desc)->dtype.elem_len << GFC_DTYPE_SIZE_SHIFT)  \
+  ) & GFC_DTYPE_TYPE_SIZE_MASK)
 
 #else
 
@@ -102,7 +102,7 @@ typedef struct gfc_descriptor_t {
 #endif
 
 #define GFC_DTYPE_SIZE_MASK \
-  ( ~((ptrdiff_t)(1 << GFC_DTYPE_SIZE_SHIFT) - 1)) // least significant bits to 0
+  (~((ptrdiff_t)(1 << GFC_DTYPE_SIZE_SHIFT) - 1)) // least significant bits to 0
 #define GFC_DTYPE_TYPE_SIZE_MASK (GFC_DTYPE_SIZE_MASK | GFC_DTYPE_TYPE_MASK)
 
 #define GFC_DTYPE_INTEGER_1 ((BT_INTEGER << GFC_DTYPE_TYPE_SHIFT) \
@@ -162,15 +162,16 @@ typedef struct gfc_descriptor_t {
 #endif
 #endif
 
-/* FIXME: Hardwiring these values to what the mpi_caf.c macro GFC_DTYPE_TYPE_SIZE(desc)
-    receives in the dtype component its gf_descriptor_t argument for character(kind=c_char)
-    and logical(kind=c_bool) data:
+/* FIXME: Hardwiring these values to what the mpi_caf.c macro 
+   GFC_DTYPE_TYPE_SIZE(desc) receives in the dtype component its gf_descriptor_t
+   argument for character(kind=c_char) and logical(kind=c_bool) data:
 */
 
 #ifdef GCC_GE_8
 
-#define GFC_DTYPE_CHARACTER ((BT_CHARACTER << GFC_DTYPE_TYPE_SHIFT) \
-   | (sizeof(char) << GFC_DTYPE_SIZE_SHIFT))
+#define GFC_DTYPE_CHARACTER (                \
+   (BT_CHARACTER << GFC_DTYPE_TYPE_SHIFT) |  \
+   (sizeof(char) << GFC_DTYPE_SIZE_SHIFT))
 
 #else
 #define GFC_DTYPE_CHARACTER 48
